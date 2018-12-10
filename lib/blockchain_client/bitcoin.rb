@@ -29,9 +29,12 @@ module BlockchainClient
 
     def create_withdrawal!(issuer, recipient, amount, options = {})
       json_rpc(:settxfee, [options[:fee]]) if options.key?(:fee)
-      json_rpc(:sendtoaddress, [normalize_address(recipient.fetch(:address)), amount])
+      json_rpc(:walletpassphrase, [options[:secret], 60]) if options.key?(:secret) && !options[:secret].blank?
+      txid = json_rpc(:sendtoaddress, [normalize_address(recipient.fetch(:address)), amount])
         .fetch('result')
         .yield_self(&method(:normalize_txid))
+      json_rpc(:walletlock) if options.key?(:secret) && !options[:secret].blank?
+      txid
     end
 
     def latest_block_number
